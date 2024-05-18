@@ -25,6 +25,17 @@ Vector2 GetMovementMatrixVector(bool u, bool d, bool l, bool r)
     return res;
 }
 
+const char *ToString(ANT_BRAIN_STATE bs)
+{
+    switch (bs)
+    {
+    case WANDER:
+        return "Wander";
+    default:
+        return "Invalid Brain State";
+    }
+}
+
 int main(int argc, char **argv)
 {
     InitWindow(800, 600, "Ants!");
@@ -117,6 +128,7 @@ int main(int argc, char **argv)
         faramone_global_render_hud();
         GuiSlider((Rectangle){10, 10, 200, 16}, "", "Rotation", &ants[0].Position.z, 0, 360);
         GuiSlider((Rectangle){10, 10 + 16 + 2, 200, 16}, "", " Speed  ", &ants[0].Position.w, 0, 5);
+        DrawText(TextFormat("Brain State: %s", ToString(ants[0].BrainState)), 10, 10 + 16 + 16 + 2, 16, BLACK);
         EndDrawing();
     }
 

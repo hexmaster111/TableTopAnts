@@ -94,15 +94,30 @@ private:
 
 void ANT::Update()
 {
+
+    switch (BrainState)
+    {
+    case WANDER:
+        // Random direction changes
+        if (TimerDone(RandomDirectionChangeTimer))
+        {
+            StartTimer(&RandomDirectionChangeTimer, GetRandomValue(3, 10));
+            Position.z = GetRandomValue(0, 360);
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    if (TimerDone(FaramoneDropTimer))
+    {
+        StartTimer(&FaramoneDropTimer, 1);
+        faramone_global.ant_place_faramone(*this);
+    }
+
     Position.x += Position.w * cosf(DEG_TO_RAD(Position.z));
     Position.y += Position.w * sinf(DEG_TO_RAD(Position.z));
-
-    // Random direction changes
-    if (TimerDone(RandomDirectionChangeTimer))
-    {
-        StartTimer(&RandomDirectionChangeTimer, GetRandomValue(3, 10));
-        Position.z = GetRandomValue(0, 360);
-    }
 }
 
 void ANT::Draw()
