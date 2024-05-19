@@ -14,6 +14,11 @@ struct FARAMONE
         DrawCircleLines(Center.x, Center.y, Strength, BLACK);
     }
 
+    bool HitTest(Vector2 pos, float radius)
+    {
+        return CheckCollisionCircles(pos, radius, Center, Strength);
+    }
+
     void Update()
     {
         if (InUse && Strength <= 0)
@@ -23,7 +28,7 @@ struct FARAMONE
 
         if (InUse)
         {
-            Strength -= .01; // faramone decay
+            Strength -= .001; // faramone decay
         }
 
         if (Strength < 0)
@@ -37,12 +42,12 @@ struct FARAMONE
     bool InUse;
 };
 
+#define faramone_count 1024
 struct
 {
-
     void add_faramone(float strength, Vector2 center)
     {
-        for (size_t i = 0; i < 200; i++)
+        for (size_t i = 0; i < faramone_count; i++)
         {
             if (!faramone[i].InUse)
             {
@@ -56,7 +61,7 @@ struct
 
     void update()
     {
-        for (size_t i = 0; i < 200; i++)
+        for (size_t i = 0; i < faramone_count; i++)
         {
             faramone[i].Update();
         }
@@ -64,7 +69,7 @@ struct
 
     void render()
     {
-        for (size_t i = 0; i < 200; i++)
+        for (size_t i = 0; i < faramone_count; i++)
         {
             if (faramone[i].InUse)
             {
@@ -75,7 +80,7 @@ struct
 
     void init()
     {
-        for (size_t i = 0; i < 200; i++)
+        for (size_t i = 0; i < faramone_count; i++)
         {
             faramone[i] = {0};
         }
@@ -83,17 +88,28 @@ struct
         add_faramone(20, (Vector2){1, 1});
     }
 
-    void ant_place_faramone(ANT ant)
+    bool ant_place_faramone(ANT ant)
     {
         add_faramone(3, (Vector2){ant.Position.x, ant.Position.y});
     }
 
+    bool FaramoneTestRight(ANT ant)
+    {
+    }
+
+    bool FaramoneTestLeft(ANT ant)
+    {
+    }
+
 private:
-    FARAMONE faramone[200];
+    FARAMONE faramone[faramone_count];
 } faramone_global;
 
 void ANT::Update()
 {
+
+    left_antina = faramone_global.FaramoneTestLeft(*this);
+    right_antina = faramone_global.FaramoneTestRight(*this);
 
     switch (BrainState)
     {
@@ -104,6 +120,7 @@ void ANT::Update()
             StartTimer(&RandomDirectionChangeTimer, GetRandomValue(3, 10));
             Position.z = GetRandomValue(0, 360);
         }
+
         break;
 
     default:

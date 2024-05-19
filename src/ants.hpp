@@ -22,18 +22,15 @@ struct ANT
     ///  z - rotation,
     ///  w - velocity
     Vector4 Position;
+
     Timer RandomDirectionChangeTimer;
     Timer FaramoneDropTimer;
+
     void Update();
     void Draw();
 
     ANT_BRAIN_STATE BrainState;
+    bool left_antina, right_antina;
 };
-
-/*
-# Faramone trail
-- have a decay
-- stack
-*/
 
 #endif // __ANTS_H
