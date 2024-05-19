@@ -58,6 +58,7 @@ int main(int argc, char **argv)
         a->Position.w = 0.2f;
         a->Position.x = 0;
         a->Position.y = 0;
+        a->BrainState = WANDER;
     }
 
     faramone_global_init();

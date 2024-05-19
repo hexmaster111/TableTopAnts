@@ -13,7 +13,8 @@ void faramone_global_init();
 
 enum ANT_BRAIN_STATE
 {
-    WANDER
+    WANDER,
+    TRACK
 };
 
 struct ANT
@@ -23,6 +24,9 @@ struct ANT
     ///  w - velocity
     Vector4 Position;
 
+    Vector2 LeftAntinaHitCircle;
+    Vector2 RightAntinaHitCircle;
+
     Timer RandomDirectionChangeTimer;
     Timer FaramoneDropTimer;
 
@@ -31,6 +35,8 @@ struct ANT
 
     ANT_BRAIN_STATE BrainState;
     bool left_antina, right_antina;
+
+    // track state stuff
 };
 
 #endif // __ANTS_H
