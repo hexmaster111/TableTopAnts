@@ -1,6 +1,7 @@
 #include "ants.hpp"
 #include <math.h>
 #include <stdio.h>
+#include <assert.h>
 
 // https://stackoverflow.com/a/48693317
 #define DEG_TO_RAD(angleInDegrees) \
@@ -142,6 +143,8 @@ void ANT::Update()
         if (left_antina || right_antina)
         {
             BrainState = TRACK;
+            // timer to reset tracking back to wander
+            StartTimer(&TrackToWanderTimer, TrackTime = GetRandomValue(7, 15));
         }
 
         // Random direction changes
@@ -154,9 +157,28 @@ void ANT::Update()
         break;
 
     case TRACK:
+
+        if (left_antina || right_antina)
+        {
+            BrainState = TRACK;
+            StartTimer(&TrackToWanderTimer, TrackTime);
+        }
+
+        if (TimerDone(TrackToWanderTimer))
+        {
+            BrainState = WANDER;
+        }
+
+        if (left_antina)
+            Position.z -= 1.0f;
+
+        if (right_antina)
+            Position.z += 1.0f;
+
         break;
 
     default:
+        BrainState = WANDER;
         break;
     }
 
@@ -202,6 +224,19 @@ void ANT::Update()
     {
         StartTimer(&FaramoneDropTimer, 1.0);
         faramone_global.ant_place_faramone(*this, bottomLeft);
+    }
+}
+
+const char *ToString(ANT_BRAIN_STATE bs)
+{
+    switch (bs)
+    {
+    case WANDER:
+        return "Wander";
+    case TRACK:
+        return "Track";
+    default:
+        return "Invalid Brain State";
     }
 }
 

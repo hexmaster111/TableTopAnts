@@ -25,17 +25,6 @@ Vector2 GetMovementMatrixVector(bool u, bool d, bool l, bool r)
     return res;
 }
 
-const char *ToString(ANT_BRAIN_STATE bs)
-{
-    switch (bs)
-    {
-    case WANDER:
-        return "Wander";
-    default:
-        return "Invalid Brain State";
-    }
-}
-
 int main(int argc, char **argv)
 {
     InitWindow(800, 600, "Ants!");

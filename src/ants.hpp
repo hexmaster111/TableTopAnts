@@ -17,6 +17,8 @@ enum ANT_BRAIN_STATE
     TRACK
 };
 
+const char *ToString(ANT_BRAIN_STATE bs);
+
 struct ANT
 {
     /// @brief
@@ -37,6 +39,8 @@ struct ANT
     bool left_antina, right_antina;
 
     // track state stuff
+    Timer TrackToWanderTimer;
+    int TrackTime;
 };
 
 #endif // __ANTS_H
