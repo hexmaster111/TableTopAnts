@@ -8,7 +8,7 @@
     ((angleInDegrees) * M_PI / 180.0f)
 
 #define ANTINA_CHECK_RAIDUS (2.0f)
-#define ANT_RW (5.0f)
+#define ANT_RW (10.0f)
 #define ANT_RH (10.0f)
 
 struct FARAMONE
@@ -33,7 +33,7 @@ struct FARAMONE
 
         if (InUse)
         {
-            Strength -= .001; // faramone decay
+            Strength -= .0005; // faramone decay
         }
 
         if (Strength < 0)
@@ -138,6 +138,7 @@ void ANT::Update()
     switch (BrainState)
     {
     case WANDER:
+        Position.w = .2;
 
         // we smell something
         if (left_antina || right_antina)
@@ -157,6 +158,7 @@ void ANT::Update()
         break;
 
     case TRACK:
+        Position.w = .15;
 
         if (left_antina || right_antina)
         {
@@ -169,11 +171,10 @@ void ANT::Update()
             BrainState = WANDER;
         }
 
-        if (left_antina)
-            Position.z -= 1.0f;
-
-        if (right_antina)
-            Position.z += 1.0f;
+        if (left_antina && !right_antina)
+            Position.z -= 2.0f;
+        else if (right_antina && !left_antina)
+            Position.z += 2.0f;
 
         break;
 
@@ -220,10 +221,13 @@ void ANT::Update()
     LeftAntinaHitCircle = topLeft;
     RightAntinaHitCircle = topRight;
 
+    center_bottom.x = (bottomLeft.x + bottomRight.x) / 2.0f;
+    center_bottom.y = (bottomLeft.y + bottomRight.y) / 2.0f;
     if (TimerDone(FaramoneDropTimer))
     {
-        StartTimer(&FaramoneDropTimer, 1.0);
-        faramone_global.ant_place_faramone(*this, bottomLeft);
+
+        StartTimer(&FaramoneDropTimer, 1);
+        faramone_global.ant_place_faramone(*this, center_bottom);
     }
 }
 
@@ -251,6 +255,8 @@ void ANT::Draw()
         (Vector2){rw / 2.0f, rh / 2.0f},
         Position.z - 90.0f,
         BLACK);
+
+    DrawCircle(center_bottom.x, center_bottom.y, 1, RED);
 
     if (left_antina)
     {

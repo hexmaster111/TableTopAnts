@@ -28,6 +28,7 @@ struct ANT
 
     Vector2 LeftAntinaHitCircle;
     Vector2 RightAntinaHitCircle;
+    Vector2 center_bottom;
 
     Timer RandomDirectionChangeTimer;
     Timer FaramoneDropTimer;

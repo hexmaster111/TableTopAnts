@@ -27,7 +27,9 @@ Vector2 GetMovementMatrixVector(bool u, bool d, bool l, bool r)
 
 int main(int argc, char **argv)
 {
-    InitWindow(800, 600, "Ants!");
+    const int ant_count = 10;
+
+    InitWindow(1200, 800, "Ants!");
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     char sbuff[50];
 
@@ -38,15 +40,15 @@ int main(int argc, char **argv)
 
     SetTargetFPS(60);
 
-    ANT ants[5];
+    ANT ants[ant_count];
 
-    for (size_t i = 0; i < 5; i++)
+    for (size_t i = 0; i < ant_count; i++)
     {
         ANT *a = &ants[i];
         a->Position.z = static_cast<float>(GetRandomValue(0, 360));
         a->Position.w = 0.2f;
-        a->Position.x = 0;
-        a->Position.y = 0;
+        a->Position.x = GetRandomValue(0, 10);
+        a->Position.y = GetRandomValue(0, 10);
         a->BrainState = WANDER;
     }
 
@@ -89,7 +91,7 @@ int main(int argc, char **argv)
 
         );
 
-        for (size_t i = 0; i < 5; i++)
+        for (size_t i = 0; i < ant_count; i++)
         {
             ANT *a = &ants[i];
             a->Update();
@@ -105,7 +107,7 @@ int main(int argc, char **argv)
         DrawGrid(100, 50);
         rlPopMatrix();
 
-        for (size_t i = 0; i < 5; i++)
+        for (size_t i = 0; i < ant_count; i++)
         {
             ANT *a = &ants[i];
             a->Draw();
