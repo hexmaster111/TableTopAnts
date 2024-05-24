@@ -11,9 +11,9 @@ void faramone_global_render_game();
 void faramone_global_update();
 void faramone_global_init();
 
-void food_global_init();
-void food_global_render_game();
-void food_global_update();
+void global_init();
+void global_render_game();
+void global_update();
 
 enum ANT_BRAIN_STATE
 {
@@ -44,8 +44,11 @@ struct ANT
 
     /* ant simulation stuff */
     ANT_BRAIN_STATE BrainState;
-    float StomachFullness; // 0.0 = empty, 1.0 = full;
+    // 0.0 = empty, 1.0 = full;
+    float StomachFullness;
     bool is_mouth_touching_food,
+        isLeftAntiTouchingFood,
+        isRightAntiTouchingFood, is_full,
         is_left_antina_touching_faramone,
         is_right_antina_touching_faramone;
 

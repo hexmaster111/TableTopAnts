@@ -27,7 +27,7 @@ Vector2 GetMovementMatrixVector(bool u, bool d, bool l, bool r)
 
 int main(int argc, char **argv)
 {
-    const int ant_count = 10;
+    const int ant_count = 20;
 
     InitWindow(1200, 800, "Ants!");
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
@@ -35,8 +35,8 @@ int main(int argc, char **argv)
 
     Camera2D cam = {0};
     cam.zoom = 1.0f;
-    cam.target = (Vector2){1, 1};
-    Vector2 cam_off = {0};
+    cam.target = (Vector2){0, 0};
+    cam.offset = (Vector2){1200 / 2, 800 / 2};
 
     SetTargetFPS(60);
 
@@ -47,14 +47,14 @@ int main(int argc, char **argv)
         ANT *a = &ants[i];
         a->Position.z = static_cast<float>(GetRandomValue(0, 360));
         a->Position.w = 0.2f;
-        a->Position.x = GetRandomValue(0, 10);
-        a->Position.y = GetRandomValue(0, 10);
+        a->Position.x = -100 + GetRandomValue(-50, 50);
+        a->Position.y = -100 + GetRandomValue(-50, 50);
         a->BrainState = WANDER;
         a->StomachFullness = 0.0;
     }
 
     faramone_global_init();
-    food_global_init();
+    global_init();
 
     while (!WindowShouldClose())
     {
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
             a->Update();
         }
         faramone_global_update();
-        food_global_update();
+        global_update();
         BeginDrawing();
         ClearBackground(WHITE);
 
@@ -110,22 +110,31 @@ int main(int argc, char **argv)
         DrawGrid(100, 50);
         rlPopMatrix();
 
+        faramone_global_render_game();
+        global_render_game();
         for (size_t i = 0; i < ant_count; i++)
         {
             ANT *a = &ants[i];
             a->Draw();
         }
 
-        faramone_global_render_game();
-        food_global_render_game();
-
         EndMode2D();
         // hud
         faramone_global_render_hud();
-        GuiSlider((Rectangle){10, 10, 200, 16}, "", "Rotation", &ants[0].Position.z, 0, 360);
-        GuiSlider((Rectangle){10, 10 + 16 + 2, 200, 16}, "", " Speed  ", &ants[0].Position.w, 0, 5);
-        GuiSlider((Rectangle){10, 10 + 16 + 16 + 2, 200, 16}, "", " Fullness  ", &ants[0].StomachFullness, 0, 1);
-        DrawText(TextFormat("Brain State: %s", ToString(ants[0].BrainState)), 10, 10 + 16 + 16 + 16 + 2, 16, BLACK);
+        GuiSlider((Rectangle){10, 10, 200, 16}, "", "Rotation", &ants[0].Position.z, -1024, 1024);
+        GuiSlider((Rectangle){10, 10 + 16, 200, 16}, "", " Speed  ", &ants[0].Position.w, 0, 5);
+        GuiSlider((Rectangle){10, 10 + 16 + 16, 200, 16}, "", " Fullness  ", &ants[0].StomachFullness, 0, 1);
+
+        GuiCheckBox((Rectangle){10, 60, 100, 16}, "", &ants[0].is_left_antina_touching_faramone);
+        GuiCheckBox((Rectangle){110, 60, 100, 16}, "LFaramone | RFaramone", &ants[0].is_right_antina_touching_faramone);
+
+        GuiCheckBox((Rectangle){10, 60 + 16, 100, 16}, "", &ants[0].isLeftAntiTouchingFood);
+        GuiCheckBox((Rectangle){110, 60 + 16, 100, 16}, "LFood | RFood", &ants[0].isRightAntiTouchingFood);
+
+        GuiCheckBox((Rectangle){10, 60 + 16 + 16, 100, 16}, "", &ants[0].is_full);
+        GuiCheckBox((Rectangle){110, 60 + 16 + 16, 100, 16}, "Is Full | Mouth Touching Food", &ants[0].is_mouth_touching_food);
+
+        DrawText(TextFormat("Brain State: %s", ToString(ants[0].BrainState)), 10, 60 + 96, 16, BLACK);
         EndDrawing();
     }
 

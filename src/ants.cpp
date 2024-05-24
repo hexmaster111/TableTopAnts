@@ -61,7 +61,10 @@ struct FOOD
 
     void Draw()
     {
+        const int fontsize = 3;
+        const char *text = TextFormat("%.01f", Strength);
         DrawCircle(Center.x, Center.y, Strength, RED);
+        DrawText(text, Center.x - (MeasureText(text, fontsize) / 2), Center.y - (fontsize / 2), fontsize, BLACK);
     }
 
     bool HitTest(Vector2 pos, float radius)
@@ -73,7 +76,7 @@ struct FOOD
     {
         if (InUse && Strength <= 0)
         {
-            InUse = false; // mark pharamones that have blown away as free
+            InUse = false;
         }
 
         if (Strength < 0)
@@ -89,9 +92,19 @@ struct FOOD
 
 struct ANT_HILL
 {
-private:
+    const float Raidus = 32.0f;
     Vector2 Center;
-};
+    float FoodStore;
+
+    void update()
+    {
+    }
+
+    void draw()
+    {
+        DrawCircleGradient(Center.x, Center.y, Raidus, BROWN, YELLOW);
+    }
+} dev_hill;
 
 struct FARAMONE_GLOBAL_STRUCT
 {
@@ -234,8 +247,8 @@ struct FOOD_GLOBAL_STRUCT
         FOOD *f = GetFoodTouching(*ant);
 
         assert(f != NULL);
-        ant->StomachFullness += .05;
-        f->Strength -= .05;
+        ant->StomachFullness += .01;
+        f->Strength -= .001;
     }
 
     /// @return FOOD* or NULL
@@ -280,24 +293,36 @@ private:
     FOOD food[food_count];
 } food_global;
 
-void food_global_init()
+void global_init()
 {
+    dev_hill.Center = (Vector2){-100, -100};
+    dev_hill.FoodStore = 0;
     food_global.init();
     food_global.add((Vector2){10, 10}, 10);
 }
-void food_global_render_game() { food_global.render(); }
-void food_global_update() { food_global.update(); }
+
+void global_render_game()
+{
+    food_global.render();
+    dev_hill.draw();
+}
+
+void global_update()
+{
+    food_global.update();
+    dev_hill.update();
+}
 
 void ANT::Update()
 {
-    bool isLeftAntiTouchingFood = food_global.Test(this->top_left, ANTINA_CHECK_RAIDUS);
-    bool isRightAntiTouchingFood = food_global.Test(this->top_right, ANTINA_CHECK_RAIDUS);
+    isLeftAntiTouchingFood = food_global.Test(this->top_left, ANTINA_CHECK_RAIDUS);
+    isRightAntiTouchingFood = food_global.Test(this->top_right, ANTINA_CHECK_RAIDUS);
 
     is_left_antina_touching_faramone = faramone_global.TestLeft(*this);
     is_right_antina_touching_faramone = faramone_global.TestRight(*this);
     is_mouth_touching_food = food_global.TestFoodOnMouth(*this);
-
-    bool is_full = StomachFullness >= ANT_STOMACH_FULLNESS;
+    is_full = StomachFullness >= ANT_STOMACH_FULLNESS;
+    bool is_stomach_empty = 0 >= StomachFullness;
 
     switch (BrainState)
     {
@@ -307,6 +332,7 @@ void ANT::Update()
         {
             BrainState = FEED;
             Position.w = 0;
+            break;
         }
 
         // we smell something
@@ -332,6 +358,9 @@ void ANT::Update()
         if (is_mouth_touching_food && !is_full)
         {
             BrainState = FEED;
+            Position.w = 0;
+
+            break;
         }
 
         if (is_left_antina_touching_faramone || is_right_antina_touching_faramone)
@@ -380,8 +409,24 @@ void ANT::Update()
         break;
     }
 
-    Position.x += Position.w * cosf(DEG_TO_RAD(Position.z));
-    Position.y += Position.w * sinf(DEG_TO_RAD(Position.z));
+    bool touching_the_hive = CheckCollisionCircles(dev_hill.Center, dev_hill.Raidus,
+                                                   (Vector2){Position.x, Position.y},
+                                                   ANT_RW);
+
+    if (touching_the_hive && !is_stomach_empty)
+    {
+        dev_hill.FoodStore += .01f;
+        StomachFullness -= .01f;
+        if (0 >= StomachFullness)
+        {
+            Position.z += 180;
+        }
+    }
+    else
+    {
+        Position.x += Position.w * cosf(DEG_TO_RAD(Position.z));
+        Position.y += Position.w * sinf(DEG_TO_RAD(Position.z));
+    }
     // antina hitbox calulations, based on DrawRectanglePro impl
     Vector2 topLeft = {0};
     Vector2 topRight = {0};
@@ -466,6 +511,7 @@ void ANT::Draw()
     float full_width = map(StomachFullness, 0.0f, 1.0f, 0.0f, rw / 4.0f);
 
     DrawCircle(x, y, full_width, RED);
+    DrawCircleLines(x, y, rw / 4.0f, RED);
 
     DrawCircle(center_bottom.x, center_bottom.y, 1, BLACK);
 
