@@ -18,7 +18,8 @@ void food_global_update();
 enum ANT_BRAIN_STATE
 {
     WANDER,
-    TRACK
+    TRACK,
+    FEED
 };
 
 const char *ToString(ANT_BRAIN_STATE bs);
@@ -30,10 +31,10 @@ struct ANT
     ///  w - velocity
     Vector4 Position;
 
-    Vector2 LeftAntinaHitCircle;
-    Vector2 RightAntinaHitCircle;
-    Vector2 center_bottom; // faramone
-    Vector2 center_front;  // mouth
+    Vector2 top_left;
+    Vector2 top_right;
+    Vector2 center_bottom;  // faramone
+    Vector2 mouth_location; // mouth
 
     Timer RandomDirectionChangeTimer;
     Timer FaramoneDropTimer;
@@ -41,9 +42,12 @@ struct ANT
     void Update();
     void Draw();
 
+    /* ant simulation stuff */
     ANT_BRAIN_STATE BrainState;
-    bool left_antina, right_antina;
-    bool mouth_touching_food;
+    float StomachFullness; // 0.0 = empty, 1.0 = full;
+    bool is_mouth_touching_food,
+        is_left_antina_touching_faramone,
+        is_right_antina_touching_faramone;
 
     // track state stuff
     Timer TrackToWanderTimer;

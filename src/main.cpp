@@ -50,6 +50,7 @@ int main(int argc, char **argv)
         a->Position.x = GetRandomValue(0, 10);
         a->Position.y = GetRandomValue(0, 10);
         a->BrainState = WANDER;
+        a->StomachFullness = 0.0;
     }
 
     faramone_global_init();
@@ -123,7 +124,8 @@ int main(int argc, char **argv)
         faramone_global_render_hud();
         GuiSlider((Rectangle){10, 10, 200, 16}, "", "Rotation", &ants[0].Position.z, 0, 360);
         GuiSlider((Rectangle){10, 10 + 16 + 2, 200, 16}, "", " Speed  ", &ants[0].Position.w, 0, 5);
-        DrawText(TextFormat("Brain State: %s", ToString(ants[0].BrainState)), 10, 10 + 16 + 16 + 2, 16, BLACK);
+        GuiSlider((Rectangle){10, 10 + 16 + 16 + 2, 200, 16}, "", " Fullness  ", &ants[0].StomachFullness, 0, 1);
+        DrawText(TextFormat("Brain State: %s", ToString(ants[0].BrainState)), 10, 10 + 16 + 16 + 16 + 2, 16, BLACK);
         EndDrawing();
     }
 
