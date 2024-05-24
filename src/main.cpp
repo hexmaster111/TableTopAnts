@@ -53,6 +53,7 @@ int main(int argc, char **argv)
     }
 
     faramone_global_init();
+    food_global_init();
 
     while (!WindowShouldClose())
     {
@@ -97,6 +98,7 @@ int main(int argc, char **argv)
             a->Update();
         }
         faramone_global_update();
+        food_global_update();
         BeginDrawing();
         ClearBackground(WHITE);
 
@@ -114,6 +116,7 @@ int main(int argc, char **argv)
         }
 
         faramone_global_render_game();
+        food_global_render_game();
 
         EndMode2D();
         // hud

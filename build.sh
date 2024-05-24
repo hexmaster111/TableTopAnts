@@ -4,7 +4,7 @@ if ! test -d bin; then
     mkdir bin
 fi
 
-cc -I. -ggdb             \
+cc -I. -ggdb -Wall       \
     src/main.cpp         \
     src/ants.cpp         \
     src/timer.cpp        \
