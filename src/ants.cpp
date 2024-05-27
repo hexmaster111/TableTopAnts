@@ -13,9 +13,13 @@
 #define ANT_RH (10.0f)
 
 #define ANT_TRACK_SPEED (.15)
-#define ANT_WANDER_SPEED (.2)
+#define ANT_WANDER_SPEED (.25)
 #define ANT_WANDER_FULL (.1)
 #define ANT_STOMACH_FULLNESS (1.0)
+
+#define ANT_VISION_ANGLE (120)
+
+#define ANT_VISION_DISTANCE (200)
 
 #define faramone_count 5000
 #define food_count 5000
@@ -149,9 +153,11 @@ struct FARAMONE_GLOBAL_STRUCT
         }
     }
 
+    float StomachFullesFaramoneMultiplyer = 2;
+
     void ant_place_faramone(ANT ant, Vector2 pos)
     {
-        add_faramone(3, pos);
+        add_faramone(ant.StomachFullness * StomachFullesFaramoneMultiplyer, pos);
     }
 
     bool TestRight(ANT ant)
@@ -289,8 +295,9 @@ struct FOOD_GLOBAL_STRUCT
         return hit;
     }
 
-private:
     FOOD food[food_count];
+
+private:
 } food_global;
 
 void global_init()
@@ -313,6 +320,99 @@ void global_update()
     dev_hill.update();
 }
 
+const char *ToString(VISUAL_ITEM vi)
+{
+    switch (vi)
+    {
+    case VIS_ANT:
+        return "ANT";
+    case VIS_ANTHILL:
+        return "ANT HILL";
+    case VIS_FOOD:
+        return "FOOD";
+    case VIS_NOTHING:
+        return "NOTHING";
+
+    default:
+        return "DEFAULT VISUAL_ITEM ToString()";
+    }
+}
+
+const char *ToString(ANT_BRAIN_STATE bs)
+{
+    switch (bs)
+    {
+    case WANDER:
+        return "Wander";
+    case TRACK:
+        return "Track";
+    case FEED:
+        return "Feed";
+    default:
+        return "Invalid Brain State";
+    }
+}
+
+float map(float x, float in_min, float in_max, float out_min, float out_max)
+{
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+float MeasureDistance(Vector2 pt1, Vector2 pt2)
+{
+    return sqrtf(pow(pt2.x - pt1.x, 2) + pow(pt2.y - pt1.y, 2));
+}
+
+bool CheckColisionCircleLine(
+    Vector2 circleCenter, float circleRaidus,
+    Vector2 p0,
+    Vector2 p1,
+    Vector2 *contact_point)
+{
+
+    // Calculate the direction of the line
+    Vector2 lineDir = {p1.x - p0.x, p1.y - p0.y};
+
+    // Normalize the direction
+    float lineLength = sqrt(lineDir.x * lineDir.x + lineDir.y * lineDir.y);
+    lineDir.x /= lineLength;
+    lineDir.y /= lineLength;
+
+    // Calculate the difference between the circle center and the line start point
+    Vector2 diff = {circleCenter.x - p0.x, circleCenter.y - p0.y};
+
+    // Project the difference onto the line direction
+    float t = diff.x * lineDir.x + diff.y * lineDir.y;
+
+    // Check if the projection is beyond the line segment
+    if (t < 0.0f || t > lineLength)
+    {
+        return false;
+    }
+
+    // Calculate the point of intersection on the line
+    Vector2 intersection = {p0.x + lineDir.x * t, p0.y + lineDir.y * t};
+
+    // Calculate the distance from the intersection to the circle center
+    diff = {circleCenter.x - intersection.x, circleCenter.y - intersection.y};
+    float dist = sqrt(diff.x * diff.x + diff.y * diff.y);
+
+    // If the distance is less than the circle radius, there is a collision
+    if (dist <= circleRaidus)
+    {
+        // If a contact point is requested, store the intersection point
+        if (contact_point != nullptr)
+        {
+            contact_point->x = intersection.x;
+            contact_point->y = intersection.y;
+        }
+        return true;
+    }
+
+    // No collision
+    return false;
+}
+
 void ANT::Update()
 {
     isLeftAntiTouchingFood = food_global.Test(this->top_left, ANTINA_CHECK_RAIDUS);
@@ -322,6 +422,51 @@ void ANT::Update()
     is_right_antina_touching_faramone = faramone_global.TestRight(*this);
     is_mouth_touching_food = food_global.TestFoodOnMouth(*this);
     is_full = StomachFullness >= ANT_STOMACH_FULLNESS;
+
+#define FIND_EYE_HITS(vi_eye_target, eye_target)                                                             \
+    {                                                                                                        \
+        Vector2 contact;                                                                                     \
+        VISION_DOT closest = (VISION_DOT){VIS_NOTHING, MAXFLOAT};                                            \
+        bool any = false;                                                                                    \
+        if (CheckColisionCircleLine(dev_hill.Center, dev_hill.Raidus, mouth_location, eye_target, &contact)) \
+        {                                                                                                    \
+            vi_eye_target = (VISION_DOT){VIS_ANTHILL, MeasureDistance(mouth_location, contact)};             \
+            any = true;                                                                                      \
+        }                                                                                                    \
+        if (!any)                                                                                            \
+        {                                                                                                    \
+            vi_eye_target = closest; /*uses nothing*/                                                        \
+        }                                                                                                    \
+        any = false;                                                                                         \
+        for (size_t i = 0; i < food_count; i++)                                                              \
+        {                                                                                                    \
+            FOOD f = food_global.food[i];                                                                    \
+            if (!f.InUse)                                                                                    \
+                continue;                                                                                    \
+            if (CheckColisionCircleLine(f.Center, f.Strength, mouth_location, eye_target, &contact))         \
+            {                                                                                                \
+                VISION_DOT tmp = (VISION_DOT){VIS_FOOD, MeasureDistance(mouth_location, contact)};           \
+                if (tmp.distance < closest.distance)                                                         \
+                {                                                                                            \
+                    closest = tmp;                                                                           \
+                    any = true;                                                                              \
+                }                                                                                            \
+            }                                                                                                \
+        }                                                                                                    \
+        if (any)                                                                                             \
+            vi_eye_target = closest;                                                                         \
+    }
+
+    FIND_EYE_HITS(vi_eye_target_center, eye_target_center);
+    FIND_EYE_HITS(vi_eye_target_l0, eye_target_l0);
+    FIND_EYE_HITS(vi_eye_target_l1, eye_target_l1);
+    FIND_EYE_HITS(vi_eye_target_l2, eye_target_l2);
+    FIND_EYE_HITS(vi_eye_target_r0, eye_target_r0);
+    FIND_EYE_HITS(vi_eye_target_r1, eye_target_r1);
+    FIND_EYE_HITS(vi_eye_target_r2, eye_target_r2);
+
+#undef FIND_EYE_HITS
+
     bool is_stomach_empty = 0 >= StomachFullness;
 
     switch (BrainState)
@@ -377,10 +522,21 @@ void ANT::Update()
             Position.w = ANT_WANDER_SPEED;
         }
 
-        if ((is_left_antina_touching_faramone) || (isLeftAntiTouchingFood && !is_full))
-            Position.z -= 2.0f;
-        else if ((is_right_antina_touching_faramone) || (isRightAntiTouchingFood && !is_full))
-            Position.z += 2.0f;
+        if (is_stomach_empty)
+        {
+            // devate more, we are looking for food
+            if ((is_left_antina_touching_faramone) || (isLeftAntiTouchingFood && !is_full))
+                Position.z -= 5.0f;
+            else if ((is_right_antina_touching_faramone) || (isRightAntiTouchingFood && !is_full))
+                Position.z += 5.0f;
+        }
+        else
+        { // track better, we are heading home
+            if ((is_left_antina_touching_faramone) || (isLeftAntiTouchingFood && !is_full))
+                Position.z -= 2.0f;
+            else if ((is_right_antina_touching_faramone) || (isRightAntiTouchingFood && !is_full))
+                Position.z += 2.0f;
+        }
     }
     break;
 
@@ -399,6 +555,8 @@ void ANT::Update()
                 BrainState = WANDER;
                 Position.w = ANT_WANDER_FULL;
                 Position.z += 180;
+                // we are gonna walk back for a while before switching to wandering
+                StartTimer(&RandomDirectionChangeTimer, 100);
             }
         }
     }
@@ -428,8 +586,6 @@ void ANT::Update()
         Position.y += Position.w * sinf(DEG_TO_RAD(Position.z));
     }
     // antina hitbox calulations, based on DrawRectanglePro impl
-    Vector2 topLeft = {0};
-    Vector2 topRight = {0};
     Vector2 bottomLeft = {0};
     Vector2 bottomRight = {0};
 
@@ -447,14 +603,11 @@ void ANT::Update()
     float dx = -origin.x;
     float dy = -origin.y;
 
-    topLeft.x = x + dx * cosRotation - dy * sinRotation;
-    topLeft.y = y + dx * sinRotation + dy * cosRotation;
+    top_left.x = x + dx * cosRotation - dy * sinRotation;
+    top_left.y = y + dx * sinRotation + dy * cosRotation;
 
-    topRight.x = x + (dx + rec.width) * cosRotation - dy * sinRotation;
-    topRight.y = y + (dx + rec.width) * sinRotation + dy * cosRotation;
-
-    top_left = topLeft;
-    top_right = topRight;
+    top_right.x = x + (dx + rec.width) * cosRotation - dy * sinRotation;
+    top_right.y = y + (dx + rec.width) * sinRotation + dy * cosRotation;
 
     bottomLeft.x = x + dx * cosRotation - (dy + rec.height) * sinRotation;
     bottomLeft.y = y + dx * sinRotation + (dy + rec.height) * cosRotation;
@@ -465,35 +618,39 @@ void ANT::Update()
     center_bottom.x = (bottomLeft.x + bottomRight.x) / 2.0f;
     center_bottom.y = (bottomLeft.y + bottomRight.y) / 2.0f;
 
-    mouth_location.x = (topLeft.x + topRight.x) / 2.0f;
-    mouth_location.y = (topLeft.y + topRight.y) / 2.0f;
+    mouth_location.x = (top_left.x + top_right.x) / 2.0f;
+    mouth_location.y = (top_left.y + top_right.y) / 2.0f;
 
-    if (TimerDone(FaramoneDropTimer))
+    eye_target_center = {
+        mouth_location.x + ANT_VISION_DISTANCE * cosf(Position.z * DEG2RAD),
+        mouth_location.y + ANT_VISION_DISTANCE * sinf(Position.z * DEG2RAD)};
+
+    eye_target_l0 = {
+        mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z - ANT_VISION_ANGLE / 2) * DEG2RAD),
+        mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z - ANT_VISION_ANGLE / 2) * DEG2RAD)};
+
+    eye_target_l1 = {
+        mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z - ANT_VISION_ANGLE / 4) * DEG2RAD),
+        mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z - ANT_VISION_ANGLE / 4) * DEG2RAD)};
+
+    eye_target_l2 = {
+        mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z - ANT_VISION_ANGLE / 8) * DEG2RAD),
+        mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z - ANT_VISION_ANGLE / 8) * DEG2RAD)};
+    eye_target_r2 = {
+        mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z + ANT_VISION_ANGLE / 8) * DEG2RAD),
+        mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z + ANT_VISION_ANGLE / 8) * DEG2RAD)};
+    eye_target_r1 = {
+        mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z + ANT_VISION_ANGLE / 4) * DEG2RAD),
+        mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z + ANT_VISION_ANGLE / 4) * DEG2RAD)};
+    eye_target_r0 = {
+        mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z + ANT_VISION_ANGLE / 2) * DEG2RAD),
+        mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z + ANT_VISION_ANGLE / 2) * DEG2RAD)};
+
+    if (TimerDone(FaramoneDropTimer) && !touching_the_hive)
     {
         StartTimer(&FaramoneDropTimer, 1);
         faramone_global.ant_place_faramone(*this, center_bottom);
     }
-}
-
-const char *ToString(ANT_BRAIN_STATE bs)
-{
-    switch (bs)
-    {
-    case WANDER:
-        return "Wander";
-    case TRACK:
-        return "Track";
-    case FEED:
-        return "Feed";
-    default:
-        return "Invalid Brain State";
-    }
-}
-
-// output = output_start + round(slope * (input - input_start))
-float map(float x, float in_min, float in_max, float out_min, float out_max)
-{
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 void ANT::Draw()
@@ -502,17 +659,20 @@ void ANT::Draw()
     float x = Position.x - rw / 2.0f,
           y = Position.y - rh / 2.0f;
 
-    DrawRectanglePro(
-        (Rectangle){x, y, rw, rh},
-        (Vector2){rw / 2.0f, rh / 2.0f},
-        Position.z - 90.0f,
-        BLACK);
+    DrawLineV(mouth_location, eye_target_center, BLACK);
+
+    DrawLineV(mouth_location, eye_target_l0, RED);
+    DrawLineV(mouth_location, eye_target_l1, GREEN);
+    DrawLineV(mouth_location, eye_target_l2, BLUE);
+    DrawLineV(mouth_location, eye_target_r2, BLUE);
+    DrawLineV(mouth_location, eye_target_r1, GREEN);
+    DrawLineV(mouth_location, eye_target_r0, RED);
+
+    DrawRectanglePro((Rectangle){x, y, rw, rh}, (Vector2){rw / 2.0f, rh / 2.0f}, Position.z - 90.0f, BLACK);
 
     float full_width = map(StomachFullness, 0.0f, 1.0f, 0.0f, rw / 4.0f);
-
     DrawCircle(x, y, full_width, RED);
     DrawCircleLines(x, y, rw / 4.0f, RED);
-
     DrawCircle(center_bottom.x, center_bottom.y, 1, BLACK);
 
     if (is_mouth_touching_food)
@@ -558,8 +718,14 @@ void ANT::Draw()
             BLACK);
     }
 }
-
-void faramone_global_render_hud() {}
+#include "raygui.h"
+void faramone_global_render_hud()
+{
+    GuiSlider({10, 500, 128, 32}, "",
+              TextFormat("Stomch fullness to faramone output %.1f",
+                         faramone_global.StomachFullesFaramoneMultiplyer),
+              &faramone_global.StomachFullesFaramoneMultiplyer, 0, 3);
+}
 void faramone_global_update() { faramone_global.update(); }
 void faramone_global_render_game() { faramone_global.render(); }
 void faramone_global_init() { faramone_global.init(); }

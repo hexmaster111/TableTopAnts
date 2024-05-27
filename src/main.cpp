@@ -25,18 +25,22 @@ Vector2 GetMovementMatrixVector(bool u, bool d, bool l, bool r)
     return res;
 }
 
+const int screen_width = 800, screen_height = 600;
+
 int main(int argc, char **argv)
 {
-    const int ant_count = 20;
+    const int ant_count = 1;
 
-    InitWindow(1200, 800, "Ants!");
+    bool pause = false;
+
+    InitWindow(screen_width, screen_height, "Ants!");
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     char sbuff[50];
 
     Camera2D cam = {0};
     cam.zoom = 1.0f;
     cam.target = (Vector2){0, 0};
-    cam.offset = (Vector2){1200 / 2, 800 / 2};
+    cam.offset = (Vector2){screen_width / 2, screen_height / 2};
 
     SetTargetFPS(60);
 
@@ -58,6 +62,7 @@ int main(int argc, char **argv)
 
     while (!WindowShouldClose())
     {
+
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
         {
             Vector2 delta = GetMouseDelta();
@@ -87,18 +92,23 @@ int main(int argc, char **argv)
         cam.target = Vector2Add(cam.target,
                                 Vector2Scale(
                                     GetMovementMatrixVector(up, down, left, right),
-                                    IsKeyDown(KEY_LEFT_ALT)
+                                    IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)
                                         ? 5.0f
                                         : 2.0f)
 
         );
 
-        for (size_t i = 0; i < ant_count; i++)
+        if (!pause)
         {
-            ANT *a = &ants[i];
-            a->Update();
+
+            for (size_t i = 0; i < ant_count; i++)
+            {
+                ANT *a = &ants[i];
+                a->Update();
+            }
+            faramone_global_update();
         }
-        faramone_global_update();
+
         global_update();
         BeginDrawing();
         ClearBackground(WHITE);
@@ -133,8 +143,25 @@ int main(int argc, char **argv)
 
         GuiCheckBox((Rectangle){10, 60 + 16 + 16, 100, 16}, "", &ants[0].is_full);
         GuiCheckBox((Rectangle){110, 60 + 16 + 16, 100, 16}, "Is Full | Mouth Touching Food", &ants[0].is_mouth_touching_food);
+        GuiCheckBox((Rectangle){10, 60 + 16 + 16 + 16, 16, 16}, "Pause", &pause);
 
         DrawText(TextFormat("Brain State: %s", ToString(ants[0].BrainState)), 10, 60 + 96, 16, BLACK);
+
+        if (ants[0].vi_eye_target_center.item != VIS_NOTHING)
+            DrawText(TextFormat("CF EYE:%.1f ,%s", ants[0].vi_eye_target_center.distance, ToString(ants[0].vi_eye_target_center.item)), 10, 60 + 96 + 16, 16, BLACK);
+        if (ants[0].vi_eye_target_l0.item != VIS_NOTHING)
+            DrawText(TextFormat("l0 EYE:%.1f ,%s", ants[0].vi_eye_target_l0.distance, ToString(ants[0].vi_eye_target_l0.item)), 10, 60 + 96 + 16 + 16, 16, BLACK);
+        if (ants[0].vi_eye_target_r0.item != VIS_NOTHING)
+            DrawText(TextFormat("r0 EYE:%.1f ,%s", ants[0].vi_eye_target_r0.distance, ToString(ants[0].vi_eye_target_r0.item)), 10, 60 + 96 + 16 + 16 + 16, 16, BLACK);
+        if (ants[0].vi_eye_target_l1.item != VIS_NOTHING)
+            DrawText(TextFormat("l1 EYE:%.1f ,%s", ants[0].vi_eye_target_l1.distance, ToString(ants[0].vi_eye_target_l1.item)), 10, 60 + 96 + 16 + 16 + 16 + 16, 16, BLACK);
+        if (ants[0].vi_eye_target_r1.item != VIS_NOTHING)
+            DrawText(TextFormat("r1 EYE:%.1f ,%s", ants[0].vi_eye_target_r1.distance, ToString(ants[0].vi_eye_target_r1.item)), 10, 60 + 96 + 16 + 16 + 16 + 16 + 16, 16, BLACK);
+        if (ants[0].vi_eye_target_l2.item != VIS_NOTHING)
+            DrawText(TextFormat("l2 EYE:%.1f ,%s", ants[0].vi_eye_target_l2.distance, ToString(ants[0].vi_eye_target_l2.item)), 10, 60 + 96 + 16 + 16 + 16 + 16 + 16 + 16, 16, BLACK);
+        if (ants[0].vi_eye_target_r2.item != VIS_NOTHING)
+            DrawText(TextFormat("r2 EYE:%.1f ,%s", ants[0].vi_eye_target_r2.distance, ToString(ants[0].vi_eye_target_r2.item)), 10, 60 + 96 + 16 + 16 + 16 + 16 + 16 + 16 + 16, 16, BLACK);
+
         EndDrawing();
     }
 

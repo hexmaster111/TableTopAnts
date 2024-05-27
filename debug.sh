@@ -9,4 +9,4 @@ cc -I. -ggdb             \
     src/ants.cpp         \
     src/timer.cpp        \
      -o bin/main -lraylib -lm -std=c++11
-gf2 ./bin/main
+~/bin/gf2 ./bin/main

@@ -22,7 +22,21 @@ enum ANT_BRAIN_STATE
     FEED
 };
 
+enum VISUAL_ITEM
+{
+    VIS_NOTHING,
+    VIS_ANTHILL,
+    VIS_FOOD,
+    VIS_ANT
+};
+
+struct VISION_DOT
+{
+    VISUAL_ITEM item;
+    float distance;
+};
 const char *ToString(ANT_BRAIN_STATE bs);
+const char *ToString(VISUAL_ITEM vs);
 
 struct ANT
 {
@@ -51,6 +65,23 @@ struct ANT
         isRightAntiTouchingFood, is_full,
         is_left_antina_touching_faramone,
         is_right_antina_touching_faramone;
+
+    // Ant vision
+    Vector2 eye_target_l0,
+        eye_target_l1,
+        eye_target_l2,
+        eye_target_r2,
+        eye_target_r1,
+        eye_target_r0,
+        eye_target_center;
+
+    VISION_DOT vi_eye_target_l0,
+        vi_eye_target_l1,
+        vi_eye_target_l2,
+        vi_eye_target_r2,
+        vi_eye_target_r1,
+        vi_eye_target_r0,
+        vi_eye_target_center;
 
     // track state stuff
     Timer TrackToWanderTimer;
