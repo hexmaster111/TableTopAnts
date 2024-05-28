@@ -344,7 +344,7 @@ const char *ToString(ANT_BRAIN_STATE bs)
     {
 
     default:
-        return "DEFAULT ANT_BRAIN_STATE ToString()";
+        return TextFormat("DEFAULT ANT_BRAIN_STATE ToString(%d)", (int)bs);
     }
 }
 
@@ -417,6 +417,8 @@ void AntBrain(ANT *a)
     if (a->is_mouth_touching_food && !a->is_full)
         a->BrainState = ABS_FEED;
 
+    bool should_move = false;
+
     switch (a->BrainState)
     {
     case ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH:
@@ -457,13 +459,31 @@ void AntBrain(ANT *a)
         // if we are less then 50% full, we go look for food
         // if we are gtr then 50%, we go look for the hive
 
-        a->Position.x += a->Position.w * cosf(DEG_TO_RAD(a->Position.z));
-        a->Position.y += a->Position.w * sinf(DEG_TO_RAD(a->Position.z));
+        if (a->StomachFullness > 50)
+            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPINSEARCH;
+        else
+            a->BrainState = ABS_LOOK_FOR_FOOD;
+    }
+    break;
+
+    case ABS_LOOK_FOR_FOOD:
+    {
+    }
+    break;
+
+    case ABS_LOOK_FOR_ANTHILL_SPINSEARCH:
+    {
     }
     break;
 
     default:
         break;
+    }
+
+    if (should_move)
+    {
+        a->Position.x += a->Position.w * cosf(DEG_TO_RAD(a->Position.z));
+        a->Position.y += a->Position.w * sinf(DEG_TO_RAD(a->Position.z));
     }
 }
 

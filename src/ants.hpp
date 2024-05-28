@@ -20,6 +20,10 @@ enum ANT_BRAIN_STATE
     ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH,
     ABS_BEGIN_WANDER,
     ABS_FEED,
+    ABS_LOOK_FOR_ANTHILL_SPINSEARCH,
+    ABS_LOOK_FOR_HIVE_SPIN_SEARCH_HIVE_FOUND,
+    ABS_LOOK_FOR_HIVE_SPIN_SEARCH_HIVE_NOTFOUND,
+    ABS_LOOK_FOR_FOOD
 
 };
 
@@ -99,6 +103,8 @@ struct ANT
         vi_eye_target_r1,
         vi_eye_target_r0,
         vi_eye_target_center;
+
+    bool spin_search_turn_left;
 
     // track state stuff
     Timer TrackToWanderTimer;
