@@ -430,7 +430,7 @@ void ANT::Update()
         bool any = false;                                                                                    \
         if (CheckColisionCircleLine(dev_hill.Center, dev_hill.Raidus, mouth_location, eye_target, &contact)) \
         {                                                                                                    \
-            vi_eye_target = (VISION_DOT){VIS_ANTHILL, MeasureDistance(mouth_location, contact)};             \
+            vi_eye_target = (VISION_DOT){VIS_ANTHILL, MeasureDistance(mouth_location, contact), contact};    \
             any = true;                                                                                      \
         }                                                                                                    \
         if (!any)                                                                                            \
@@ -624,15 +624,12 @@ void ANT::Update()
     eye_target_center = {
         mouth_location.x + ANT_VISION_DISTANCE * cosf(Position.z * DEG2RAD),
         mouth_location.y + ANT_VISION_DISTANCE * sinf(Position.z * DEG2RAD)};
-
     eye_target_l0 = {
         mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z - ANT_VISION_ANGLE / 2) * DEG2RAD),
         mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z - ANT_VISION_ANGLE / 2) * DEG2RAD)};
-
     eye_target_l1 = {
         mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z - ANT_VISION_ANGLE / 4) * DEG2RAD),
         mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z - ANT_VISION_ANGLE / 4) * DEG2RAD)};
-
     eye_target_l2 = {
         mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z - ANT_VISION_ANGLE / 8) * DEG2RAD),
         mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z - ANT_VISION_ANGLE / 8) * DEG2RAD)};
@@ -667,6 +664,23 @@ void ANT::Draw()
     DrawLineV(mouth_location, eye_target_r2, BLUE);
     DrawLineV(mouth_location, eye_target_r1, GREEN);
     DrawLineV(mouth_location, eye_target_r0, RED);
+
+#define DRAW_HIT_LINE_BLACK(vi_eye_target)                                 \
+    {                                                                      \
+        if (vi_eye_target.item != VIS_NOTHING)                             \
+        {                                                                  \
+            DrawLineEx(mouth_location, vi_eye_target.hit_point, 2, BLACK); \
+        }                                                                  \
+    }
+
+    DRAW_HIT_LINE_BLACK(vi_eye_target_l0);
+    DRAW_HIT_LINE_BLACK(vi_eye_target_l1);
+    DRAW_HIT_LINE_BLACK(vi_eye_target_l2);
+    DRAW_HIT_LINE_BLACK(vi_eye_target_r0);
+    DRAW_HIT_LINE_BLACK(vi_eye_target_r1);
+    DRAW_HIT_LINE_BLACK(vi_eye_target_r2);
+    DRAW_HIT_LINE_BLACK(vi_eye_target_center);
+#undef DRAW_HIT_LINE_BLACK
 
     DrawRectanglePro((Rectangle){x, y, rw, rh}, (Vector2){rw / 2.0f, rh / 2.0f}, Position.z - 90.0f, BLACK);
 

@@ -34,6 +34,7 @@ struct VISION_DOT
 {
     VISUAL_ITEM item;
     float distance;
+    Vector2 hit_point;
 };
 const char *ToString(ANT_BRAIN_STATE bs);
 const char *ToString(VISUAL_ITEM vs);
