@@ -17,9 +17,10 @@ void global_update();
 
 enum ANT_BRAIN_STATE
 {
-    WANDER,
-    TRACK,
-    FEED
+    ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH,
+    ABS_BEGIN_WANDER,
+    ABS_FEED,
+
 };
 
 enum VISUAL_ITEM
@@ -63,11 +64,26 @@ struct ANT
     float StomachFullness;
     bool is_mouth_touching_food,
         isLeftAntiTouchingFood,
+        is_stomach_empty, touching_the_hive,
         isRightAntiTouchingFood, is_full,
         is_left_antina_touching_faramone,
         is_right_antina_touching_faramone;
 
-    // Ant vision
+    /* Ant vision
+     *
+     *
+     * [l0,l1,l2,ct,r2,r1,r0]
+     *
+     *        \   |   /
+     *         \  |  /
+     *          \ | /
+     *         __\|/__
+     *         |     |
+     *         |     |
+     *         |     |
+     *         |_____|
+     */
+
     Vector2 eye_target_l0,
         eye_target_l1,
         eye_target_l2,

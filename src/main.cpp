@@ -53,7 +53,7 @@ int main(int argc, char **argv)
         a->Position.w = 0.2f;
         a->Position.x = -100 + GetRandomValue(-50, 50);
         a->Position.y = -100 + GetRandomValue(-50, 50);
-        a->BrainState = WANDER;
+        a->BrainState = ABS_BEGIN_WANDER;
         a->StomachFullness = 0.0;
     }
 

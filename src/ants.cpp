@@ -342,14 +342,9 @@ const char *ToString(ANT_BRAIN_STATE bs)
 {
     switch (bs)
     {
-    case WANDER:
-        return "Wander";
-    case TRACK:
-        return "Track";
-    case FEED:
-        return "Feed";
+
     default:
-        return "Invalid Brain State";
+        return "DEFAULT ANT_BRAIN_STATE ToString()";
     }
 }
 
@@ -413,6 +408,65 @@ bool CheckColisionCircleLine(
     return false;
 }
 
+void AntBrain(ANT *a)
+{
+
+    if (a->touching_the_hive && !a->is_stomach_empty)
+        a->BrainState = ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH;
+
+    if (a->is_mouth_touching_food && !a->is_full)
+        a->BrainState = ABS_FEED;
+
+    switch (a->BrainState)
+    {
+    case ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH:
+    {
+        dev_hill.FoodStore += .01f;
+        a->StomachFullness -= .01f;
+        if (0 >= a->StomachFullness)
+        {
+            a->Position.z += 180;
+            a->BrainState = ABS_BEGIN_WANDER;
+        }
+    }
+    break;
+
+    case ABS_FEED:
+    {
+        if (!a->is_mouth_touching_food)
+        {
+            a->BrainState = ABS_BEGIN_WANDER;
+            a->Position.w = ANT_TRACK_SPEED;
+        }
+        else
+        {
+            food_global.feed_ant(a);
+            if (a->is_full)
+            {
+                a->BrainState = ABS_BEGIN_WANDER;
+                a->Position.w = ANT_WANDER_FULL;
+                a->Position.z += 180;
+            }
+        }
+    }
+    break;
+
+    case ABS_BEGIN_WANDER:
+    {
+
+        // if we are less then 50% full, we go look for food
+        // if we are gtr then 50%, we go look for the hive
+
+        a->Position.x += a->Position.w * cosf(DEG_TO_RAD(a->Position.z));
+        a->Position.y += a->Position.w * sinf(DEG_TO_RAD(a->Position.z));
+    }
+    break;
+
+    default:
+        break;
+    }
+}
+
 void ANT::Update()
 {
     isLeftAntiTouchingFood = food_global.Test(this->top_left, ANTINA_CHECK_RAIDUS);
@@ -467,124 +521,11 @@ void ANT::Update()
 
 #undef FIND_EYE_HITS
 
-    bool is_stomach_empty = 0 >= StomachFullness;
+    is_stomach_empty = 0 >= StomachFullness;
+    touching_the_hive = CheckCollisionCircles(dev_hill.Center, dev_hill.Raidus, (Vector2){Position.x, Position.y}, ANT_RW);
 
-    switch (BrainState)
-    {
-    case WANDER:
-    {
-        if (is_mouth_touching_food && !is_full)
-        {
-            BrainState = FEED;
-            Position.w = 0;
-            break;
-        }
+    AntBrain(this);
 
-        // we smell something
-        if (is_left_antina_touching_faramone || is_right_antina_touching_faramone)
-        {
-            BrainState = TRACK;
-            Position.w = ANT_TRACK_SPEED;
-            // timer to reset tracking back to wander
-            StartTimer(&TrackToWanderTimer, TrackTime = GetRandomValue(7, 15));
-        }
-
-        // Random direction changes
-        if (TimerDone(RandomDirectionChangeTimer))
-        {
-            StartTimer(&RandomDirectionChangeTimer, GetRandomValue(3, 10));
-            Position.z = GetRandomValue(0, 360);
-        }
-    }
-    break;
-
-    case TRACK:
-    {
-        if (is_mouth_touching_food && !is_full)
-        {
-            BrainState = FEED;
-            Position.w = 0;
-
-            break;
-        }
-
-        if (is_left_antina_touching_faramone || is_right_antina_touching_faramone)
-        {
-            // Reset timer if we touch
-            BrainState = TRACK;
-            StartTimer(&TrackToWanderTimer, TrackTime);
-        }
-
-        if (TimerDone(TrackToWanderTimer))
-        {
-            // we havent touched in a while, switch back to looking around
-            BrainState = WANDER;
-            Position.w = ANT_WANDER_SPEED;
-        }
-
-        if (is_stomach_empty)
-        {
-            // devate more, we are looking for food
-            if ((is_left_antina_touching_faramone) || (isLeftAntiTouchingFood && !is_full))
-                Position.z -= 5.0f;
-            else if ((is_right_antina_touching_faramone) || (isRightAntiTouchingFood && !is_full))
-                Position.z += 5.0f;
-        }
-        else
-        { // track better, we are heading home
-            if ((is_left_antina_touching_faramone) || (isLeftAntiTouchingFood && !is_full))
-                Position.z -= 2.0f;
-            else if ((is_right_antina_touching_faramone) || (isRightAntiTouchingFood && !is_full))
-                Position.z += 2.0f;
-        }
-    }
-    break;
-
-    case FEED:
-    {
-        if (!is_mouth_touching_food)
-        {
-            BrainState = TRACK;
-            Position.w = ANT_TRACK_SPEED;
-        }
-        else
-        {
-            food_global.feed_ant(this);
-            if (is_full)
-            {
-                BrainState = WANDER;
-                Position.w = ANT_WANDER_FULL;
-                Position.z += 180;
-                // we are gonna walk back for a while before switching to wandering
-                StartTimer(&RandomDirectionChangeTimer, 100);
-            }
-        }
-    }
-    break;
-
-    default:
-        BrainState = WANDER;
-        break;
-    }
-
-    bool touching_the_hive = CheckCollisionCircles(dev_hill.Center, dev_hill.Raidus,
-                                                   (Vector2){Position.x, Position.y},
-                                                   ANT_RW);
-
-    if (touching_the_hive && !is_stomach_empty)
-    {
-        dev_hill.FoodStore += .01f;
-        StomachFullness -= .01f;
-        if (0 >= StomachFullness)
-        {
-            Position.z += 180;
-        }
-    }
-    else
-    {
-        Position.x += Position.w * cosf(DEG_TO_RAD(Position.z));
-        Position.y += Position.w * sinf(DEG_TO_RAD(Position.z));
-    }
     // antina hitbox calulations, based on DrawRectanglePro impl
     Vector2 bottomLeft = {0};
     Vector2 bottomRight = {0};
