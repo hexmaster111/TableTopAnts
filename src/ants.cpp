@@ -48,7 +48,7 @@ struct FARAMONE
 
         if (InUse)
         {
-            Strength -= .0005; // faramone decay
+            Strength -= .00005; // faramone decay
         }
 
         if (Strength < 0)
@@ -157,9 +157,9 @@ struct FARAMONE_GLOBAL_STRUCT
 
     float StomachFullesFaramoneMultiplyer = 2;
 
-    void ant_place_faramone(ANT ant, Vector2 pos)
+    void ant_place_faramone(ANT ant, Vector2 pos, float power)
     {
-        add_faramone(ant.StomachFullness * StomachFullesFaramoneMultiplyer, pos);
+        add_faramone(power, pos);
     }
 
     bool TestRight(ANT ant)
@@ -307,7 +307,7 @@ void global_init()
     dev_hill.Center = (Vector2){-100, -100};
     dev_hill.FoodStore = 0;
     food_global.init();
-    food_global.add((Vector2){10, 10}, 3);
+    // food_global.add((Vector2){10, 10}, 3);
 
     for (size_t i = 0; i < 100; i++)
         food_global.add((Vector2){GetRandomValue(1000, 1500), GetRandomValue(1000, 1500)}, GetRandomValue(1, 3));
@@ -622,6 +622,28 @@ void faramone_global_update() { faramone_global.update(); }
 void faramone_global_render_game() { faramone_global.render(); }
 void faramone_global_init() { faramone_global.init(); }
 
+bool AntSeeAny(ANT *a, VISUAL_ITEM vis)
+{
+    bool any = false;
+
+    if (a->vi_eye_target_center.item == vis)
+        any = true;
+    if (a->vi_eye_target_l0.item == vis)
+        any = true;
+    if (a->vi_eye_target_l1.item == vis)
+        any = true;
+    if (a->vi_eye_target_l2.item == vis)
+        any = true;
+    if (a->vi_eye_target_r0.item == vis)
+        any = true;
+    if (a->vi_eye_target_r1.item == vis)
+        any = true;
+    if (a->vi_eye_target_r2.item == vis)
+        any = true;
+
+    return any;
+}
+
 void AntBrain(ANT *a)
 {
 
@@ -636,7 +658,7 @@ void AntBrain(ANT *a)
 
     bool should_move = false;
     bool should_drop_faramones = false;
-
+    float faramones_power = 1.0f;
     switch (a->BrainState)
     {
 
@@ -769,13 +791,32 @@ void AntBrain(ANT *a)
 
     case ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND:
     {
-        a->BrainState = ABS_BEGIN_WANDER_FOR_FOOD;
+        a->BrainState = ABS_BEGIN_SNIFF_HOME;
+    }
+    break;
+
+    case ABS_BEGIN_SNIFF_HOME:
+    {
     }
     break;
 
     case ABS_BEGIN_WANDER_FOR_FOOD:
     {
+        if (AntSeeAny(a, VIS_FOOD))
+        {
+            a->BrainState = ABS_LOOK_BEGIN_FOOD_ANTHILL_LOOKAROUND;
+            break;
+        }
+
         should_move = true;
+        should_drop_faramones = true;
+        faramones_power = 2.0f;
+
+        if (a->wander_stumble-- <= 0)
+        {
+            a->wander_stumble = GetRandomValue(10, 100);
+            a->Position.z = GetRandomValue(a->Position.z - 30, a->Position.z + 30);
+        }
     }
     break;
 
@@ -794,7 +835,7 @@ void AntBrain(ANT *a)
         if (TimerDone(a->FaramoneDropTimer))
         {
             StartTimer(&a->FaramoneDropTimer, 1);
-            faramone_global.ant_place_faramone(*a, a->center_bottom);
+            faramone_global.ant_place_faramone(*a, a->center_bottom, faramones_power);
         }
     }
 }

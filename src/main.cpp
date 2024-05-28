@@ -33,8 +33,8 @@ int main(int argc, char **argv)
 
     bool pause = false;
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screen_width, screen_height, "Ants!");
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     char sbuff[50];
 
     Camera2D cam = {0};

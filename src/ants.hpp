@@ -25,7 +25,8 @@ void global_update();
     BRAINSTATE(ABS_LOOK_FOR_FOOD_SPINSEARCH)              \
     BRAINSTATE(ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND)        \
     BRAINSTATE(ABS_LOOK_FOR_FOOD_SPINSEARCH_NOTFOUND)     \
-    BRAINSTATE(ABS_BEGIN_WANDER_FOR_FOOD)
+    BRAINSTATE(ABS_BEGIN_WANDER_FOR_FOOD)                 \
+    BRAINSTATE(ABS_BEGIN_SNIFF_HOME)
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
@@ -122,6 +123,8 @@ struct ANT
     bool spin_search_turn_left;
     float spin_search_start_pos_z;
     int food_no_touch_count;
+
+    int wander_stumble;
 
     // track state stuff
     Timer TrackToWanderTimer;
