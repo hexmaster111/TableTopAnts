@@ -29,7 +29,7 @@ const int screen_width = 800, screen_height = 600;
 
 int main(int argc, char **argv)
 {
-    const int ant_count = 1;
+    const int ant_count = 5;
 
     bool pause = false;
 

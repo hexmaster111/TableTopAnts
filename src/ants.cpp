@@ -21,6 +21,8 @@
 
 #define ANT_VISION_DISTANCE (200)
 
+#define SPIN_SEARCH_SPIN_SPEED (0.1f)
+
 #define faramone_count 5000
 #define food_count 5000
 
@@ -338,16 +340,6 @@ const char *ToString(VISUAL_ITEM vi)
     }
 }
 
-const char *ToString(ANT_BRAIN_STATE bs)
-{
-    switch (bs)
-    {
-
-    default:
-        return TextFormat("DEFAULT ANT_BRAIN_STATE ToString(%d)", (int)bs);
-    }
-}
-
 float map(float x, float in_min, float in_max, float out_min, float out_max)
 {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -418,9 +410,30 @@ void AntBrain(ANT *a)
         a->BrainState = ABS_FEED;
 
     bool should_move = false;
+    bool should_drop_faramones = false;
 
     switch (a->BrainState)
     {
+
+    case ABS_BEGIN_WANDER:
+    {
+
+        fprintf(stdout, "ABS_BEGIN_WANDER: StomachFullness: %.1f\n", a->StomachFullness);
+        // if we are less then 50% full, we go look for food
+        // if we are gtr then 50%, we go look for the hive
+
+        a->spin_search_turn_left = (bool)GetRandomValue(0, 1);
+        if (a->StomachFullness > .5f)
+        {
+            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPINSEARCH;
+        }
+        else
+        {
+            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH;
+        }
+    }
+    break;
+
     case ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH:
     {
         dev_hill.FoodStore += .01f;
@@ -446,33 +459,47 @@ void AntBrain(ANT *a)
             if (a->is_full)
             {
                 a->BrainState = ABS_BEGIN_WANDER;
-                a->Position.w = ANT_WANDER_FULL;
                 a->Position.z += 180;
             }
         }
     }
     break;
 
-    case ABS_BEGIN_WANDER:
+    case ABS_LOOK_FOR_FOOD_SPINSEARCH:
     {
-
-        // if we are less then 50% full, we go look for food
-        // if we are gtr then 50%, we go look for the hive
-
-        if (a->StomachFullness > 50)
-            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPINSEARCH;
+        if (a->vi_eye_target_center.item == VIS_FOOD)
+        {
+            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND;
+        }
         else
-            a->BrainState = ABS_LOOK_FOR_FOOD;
-    }
-    break;
-
-    case ABS_LOOK_FOR_FOOD:
-    {
+        {
+            a->Position.z += a->spin_search_turn_left ? -SPIN_SEARCH_SPIN_SPEED : SPIN_SEARCH_SPIN_SPEED;
+        }
     }
     break;
 
     case ABS_LOOK_FOR_ANTHILL_SPINSEARCH:
     {
+        if (a->vi_eye_target_center.item == VIS_ANTHILL)
+        {
+            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND;
+        }
+        else
+        {
+            a->Position.z += a->spin_search_turn_left ? -SPIN_SEARCH_SPIN_SPEED : SPIN_SEARCH_SPIN_SPEED;
+        }
+    }
+    break;
+
+    case ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND:
+    {
+        should_move = true;
+    }
+    break;
+
+    case ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND:
+    {
+        should_move = true;
     }
     break;
 
@@ -484,6 +511,15 @@ void AntBrain(ANT *a)
     {
         a->Position.x += a->Position.w * cosf(DEG_TO_RAD(a->Position.z));
         a->Position.y += a->Position.w * sinf(DEG_TO_RAD(a->Position.z));
+    }
+
+    if (should_drop_faramones)
+    {
+        if (TimerDone(a->FaramoneDropTimer))
+        {
+            StartTimer(&a->FaramoneDropTimer, 1);
+            faramone_global.ant_place_faramone(*a, a->center_bottom);
+        }
     }
 }
 
@@ -603,13 +639,9 @@ void ANT::Update()
     eye_target_r0 = {
         mouth_location.x + ANT_VISION_DISTANCE * cosf((Position.z + ANT_VISION_ANGLE / 2) * DEG2RAD),
         mouth_location.y + ANT_VISION_DISTANCE * sinf((Position.z + ANT_VISION_ANGLE / 2) * DEG2RAD)};
-
-    if (TimerDone(FaramoneDropTimer) && !touching_the_hive)
-    {
-        StartTimer(&FaramoneDropTimer, 1);
-        faramone_global.ant_place_faramone(*this, center_bottom);
-    }
 }
+
+bool show_ant_vision;
 
 void ANT::Draw()
 {
@@ -617,14 +649,16 @@ void ANT::Draw()
     float x = Position.x - rw / 2.0f,
           y = Position.y - rh / 2.0f;
 
-    DrawLineV(mouth_location, eye_target_center, BLACK);
+    if (show_ant_vision)
+    {
 
-    DrawLineV(mouth_location, eye_target_l0, RED);
-    DrawLineV(mouth_location, eye_target_l1, GREEN);
-    DrawLineV(mouth_location, eye_target_l2, BLUE);
-    DrawLineV(mouth_location, eye_target_r2, BLUE);
-    DrawLineV(mouth_location, eye_target_r1, GREEN);
-    DrawLineV(mouth_location, eye_target_r0, RED);
+        DrawLineV(mouth_location, eye_target_center, BLACK);
+        DrawLineV(mouth_location, eye_target_l0, RED);
+        DrawLineV(mouth_location, eye_target_l1, GREEN);
+        DrawLineV(mouth_location, eye_target_l2, BLUE);
+        DrawLineV(mouth_location, eye_target_r2, BLUE);
+        DrawLineV(mouth_location, eye_target_r1, GREEN);
+        DrawLineV(mouth_location, eye_target_r0, RED);
 
 #define DRAW_HIT_LINE_BLACK(vi_eye_target)                                 \
     {                                                                      \
@@ -634,14 +668,15 @@ void ANT::Draw()
         }                                                                  \
     }
 
-    DRAW_HIT_LINE_BLACK(vi_eye_target_l0);
-    DRAW_HIT_LINE_BLACK(vi_eye_target_l1);
-    DRAW_HIT_LINE_BLACK(vi_eye_target_l2);
-    DRAW_HIT_LINE_BLACK(vi_eye_target_r0);
-    DRAW_HIT_LINE_BLACK(vi_eye_target_r1);
-    DRAW_HIT_LINE_BLACK(vi_eye_target_r2);
-    DRAW_HIT_LINE_BLACK(vi_eye_target_center);
+        DRAW_HIT_LINE_BLACK(vi_eye_target_l0);
+        DRAW_HIT_LINE_BLACK(vi_eye_target_l1);
+        DRAW_HIT_LINE_BLACK(vi_eye_target_l2);
+        DRAW_HIT_LINE_BLACK(vi_eye_target_r0);
+        DRAW_HIT_LINE_BLACK(vi_eye_target_r1);
+        DRAW_HIT_LINE_BLACK(vi_eye_target_r2);
+        DRAW_HIT_LINE_BLACK(vi_eye_target_center);
 #undef DRAW_HIT_LINE_BLACK
+    }
 
     DrawRectanglePro((Rectangle){x, y, rw, rh}, (Vector2){rw / 2.0f, rh / 2.0f}, Position.z - 90.0f, BLACK);
 
@@ -696,10 +731,12 @@ void ANT::Draw()
 #include "raygui.h"
 void faramone_global_render_hud()
 {
-    GuiSlider({10, 500, 128, 32}, "",
+    GuiSlider({10, 500, 128, 16}, "",
               TextFormat("Stomch fullness to faramone output %.1f",
                          faramone_global.StomachFullesFaramoneMultiplyer),
               &faramone_global.StomachFullesFaramoneMultiplyer, 0, 3);
+
+    GuiCheckBox({10, 516, 128, 16}, "Show Vision", &show_ant_vision);
 }
 void faramone_global_update() { faramone_global.update(); }
 void faramone_global_render_game() { faramone_global.render(); }
