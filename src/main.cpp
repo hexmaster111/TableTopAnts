@@ -29,7 +29,7 @@ const int screen_width = 800, screen_height = 600;
 
 int main(int argc, char **argv)
 {
-    const int ant_count = 5;
+    const int ant_count = 1;
 
     bool pause = false;
 
@@ -53,8 +53,9 @@ int main(int argc, char **argv)
         a->Position.w = 0.2f;
         a->Position.x = -100 + GetRandomValue(-50, 50);
         a->Position.y = -100 + GetRandomValue(-50, 50);
-        a->BrainState = ABS_BEGIN_WANDER;
+        a->BrainState = ABS_LOOK_BEGIN_FOOD_ANTHILL_LOOKAROUND;
         a->StomachFullness = 0.0;
+        a->spin_search_start_pos_z = a->Position.z;
     }
 
     faramone_global_init();
@@ -131,9 +132,6 @@ int main(int argc, char **argv)
         EndMode2D();
         // hud
         faramone_global_render_hud();
-        GuiSlider((Rectangle){10, 10, 200, 16}, "", "Rotation", &ants[0].Position.z, -1024, 1024);
-        GuiSlider((Rectangle){10, 10 + 16, 200, 16}, "", " Speed  ", &ants[0].Position.w, 0, 5);
-        GuiSlider((Rectangle){10, 10 + 16 + 16, 200, 16}, "", " Fullness  ", &ants[0].StomachFullness, 0, 1);
 
         GuiCheckBox((Rectangle){10, 60, 100, 16}, "", &ants[0].is_left_antina_touching_faramone);
         GuiCheckBox((Rectangle){110, 60, 100, 16}, "LFaramone | RFaramone", &ants[0].is_right_antina_touching_faramone);

@@ -15,44 +15,31 @@ void global_init();
 void global_render_game();
 void global_update();
 
+#define FOREACH_BRAINSTATE(BRAINSTATE)                    \
+    BRAINSTATE(ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH)    \
+    BRAINSTATE(ABS_FEED)                                  \
+    BRAINSTATE(ABS_LOOK_BEGIN_FOOD_ANTHILL_LOOKAROUND)    \
+    BRAINSTATE(ABS_LOOK_FOR_ANTHILL_SPINSEARCH)           \
+    BRAINSTATE(ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND)    \
+    BRAINSTATE(ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND) \
+    BRAINSTATE(ABS_LOOK_FOR_FOOD_SPINSEARCH)              \
+    BRAINSTATE(ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND)        \
+    BRAINSTATE(ABS_LOOK_FOR_FOOD_SPINSEARCH_NOTFOUND)     \
+    BRAINSTATE(ABS_BEGIN_WANDER_FOR_FOOD)
+
+#define GENERATE_ENUM(ENUM) ENUM,
+#define GENERATE_STRING(STRING) #STRING,
+
 enum ANT_BRAIN_STATE
 {
-    ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH,
-    ABS_FEED,
-
-    ABS_BEGIN_WANDER,
-    ABS_LOOK_FOR_ANTHILL_SPINSEARCH,
-    ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND,
-    ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND,
-
-    ABS_LOOK_FOR_FOOD_SPINSEARCH,
-    ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND
-
+    FOREACH_BRAINSTATE(GENERATE_ENUM)
 };
+
+static const char *ANT_BRAIN_STATE_STRING[] = {FOREACH_BRAINSTATE(GENERATE_STRING)};
 
 const char inline *ToString(ANT_BRAIN_STATE bs)
 {
-    switch (bs)
-    {
-    case ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH:
-        return "ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH";
-    case ABS_BEGIN_WANDER:
-        return "ABS_BEGIN_WANDER";
-    case ABS_FEED:
-        return "ABS_FEED";
-    case ABS_LOOK_FOR_ANTHILL_SPINSEARCH:
-        return "ABS_LOOK_FOR_ANTHILL_SPINSEARCH";
-    case ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND:
-        return "ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND";
-    case ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND:
-        return "ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND";
-    case ABS_LOOK_FOR_FOOD_SPINSEARCH:
-        return "ABS_LOOK_FOR_FOOD_SPINSEARCH";
-    case ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND:
-        return "ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND";
-    default:
-        return TextFormat("DEFAULT ANT_BRAIN_STATE ToString(%d)", (int)bs);
-    }
+    return ANT_BRAIN_STATE_STRING[bs];
 }
 
 enum VISUAL_ITEM
@@ -133,6 +120,8 @@ struct ANT
         vi_eye_target_center;
 
     bool spin_search_turn_left;
+    float spin_search_start_pos_z;
+    int food_no_touch_count;
 
     // track state stuff
     Timer TrackToWanderTimer;

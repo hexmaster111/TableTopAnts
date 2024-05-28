@@ -15,17 +15,17 @@
 #define ANT_TRACK_SPEED (.15)
 #define ANT_WANDER_SPEED (.25)
 #define ANT_WANDER_FULL (.1)
-#define ANT_STOMACH_FULLNESS (1.0)
+#define ANT_STOMACH_FULLNESS (2.0)
 
 #define ANT_VISION_ANGLE (120)
 
 #define ANT_VISION_DISTANCE (200)
 
-#define SPIN_SEARCH_SPIN_SPEED (0.1f)
+#define SPIN_SEARCH_SPIN_SPEED (0.5f)
 
 #define faramone_count 5000
 #define food_count 5000
-
+void AntBrain(ANT *a);
 struct FARAMONE
 {
 
@@ -307,7 +307,10 @@ void global_init()
     dev_hill.Center = (Vector2){-100, -100};
     dev_hill.FoodStore = 0;
     food_global.init();
-    food_global.add((Vector2){10, 10}, 10);
+    food_global.add((Vector2){10, 10}, 3);
+
+    for (size_t i = 0; i < 100; i++)
+        food_global.add((Vector2){GetRandomValue(1000, 1500), GetRandomValue(1000, 1500)}, GetRandomValue(1, 3));
 }
 
 void global_render_game()
@@ -398,129 +401,6 @@ bool CheckColisionCircleLine(
 
     // No collision
     return false;
-}
-
-void AntBrain(ANT *a)
-{
-
-    if (a->touching_the_hive && !a->is_stomach_empty)
-        a->BrainState = ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH;
-
-    if (a->is_mouth_touching_food && !a->is_full)
-        a->BrainState = ABS_FEED;
-
-    bool should_move = false;
-    bool should_drop_faramones = false;
-
-    switch (a->BrainState)
-    {
-
-    case ABS_BEGIN_WANDER:
-    {
-
-        fprintf(stdout, "ABS_BEGIN_WANDER: StomachFullness: %.1f\n", a->StomachFullness);
-        // if we are less then 50% full, we go look for food
-        // if we are gtr then 50%, we go look for the hive
-
-        a->spin_search_turn_left = (bool)GetRandomValue(0, 1);
-        if (a->StomachFullness > .5f)
-        {
-            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPINSEARCH;
-        }
-        else
-        {
-            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH;
-        }
-    }
-    break;
-
-    case ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH:
-    {
-        dev_hill.FoodStore += .01f;
-        a->StomachFullness -= .01f;
-        if (0 >= a->StomachFullness)
-        {
-            a->Position.z += 180;
-            a->BrainState = ABS_BEGIN_WANDER;
-        }
-    }
-    break;
-
-    case ABS_FEED:
-    {
-        if (!a->is_mouth_touching_food)
-        {
-            a->BrainState = ABS_BEGIN_WANDER;
-            a->Position.w = ANT_TRACK_SPEED;
-        }
-        else
-        {
-            food_global.feed_ant(a);
-            if (a->is_full)
-            {
-                a->BrainState = ABS_BEGIN_WANDER;
-                a->Position.z += 180;
-            }
-        }
-    }
-    break;
-
-    case ABS_LOOK_FOR_FOOD_SPINSEARCH:
-    {
-        if (a->vi_eye_target_center.item == VIS_FOOD)
-        {
-            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND;
-        }
-        else
-        {
-            a->Position.z += a->spin_search_turn_left ? -SPIN_SEARCH_SPIN_SPEED : SPIN_SEARCH_SPIN_SPEED;
-        }
-    }
-    break;
-
-    case ABS_LOOK_FOR_ANTHILL_SPINSEARCH:
-    {
-        if (a->vi_eye_target_center.item == VIS_ANTHILL)
-        {
-            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND;
-        }
-        else
-        {
-            a->Position.z += a->spin_search_turn_left ? -SPIN_SEARCH_SPIN_SPEED : SPIN_SEARCH_SPIN_SPEED;
-        }
-    }
-    break;
-
-    case ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND:
-    {
-        should_move = true;
-    }
-    break;
-
-    case ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND:
-    {
-        should_move = true;
-    }
-    break;
-
-    default:
-        break;
-    }
-
-    if (should_move)
-    {
-        a->Position.x += a->Position.w * cosf(DEG_TO_RAD(a->Position.z));
-        a->Position.y += a->Position.w * sinf(DEG_TO_RAD(a->Position.z));
-    }
-
-    if (should_drop_faramones)
-    {
-        if (TimerDone(a->FaramoneDropTimer))
-        {
-            StartTimer(&a->FaramoneDropTimer, 1);
-            faramone_global.ant_place_faramone(*a, a->center_bottom);
-        }
-    }
 }
 
 void ANT::Update()
@@ -680,7 +560,7 @@ void ANT::Draw()
 
     DrawRectanglePro((Rectangle){x, y, rw, rh}, (Vector2){rw / 2.0f, rh / 2.0f}, Position.z - 90.0f, BLACK);
 
-    float full_width = map(StomachFullness, 0.0f, 1.0f, 0.0f, rw / 4.0f);
+    float full_width = map(StomachFullness, 0.0f, ANT_STOMACH_FULLNESS, 0.0f, rw / 4.0f);
     DrawCircle(x, y, full_width, RED);
     DrawCircleLines(x, y, rw / 4.0f, RED);
     DrawCircle(center_bottom.x, center_bottom.y, 1, BLACK);
@@ -741,3 +621,180 @@ void faramone_global_render_hud()
 void faramone_global_update() { faramone_global.update(); }
 void faramone_global_render_game() { faramone_global.render(); }
 void faramone_global_init() { faramone_global.init(); }
+
+void AntBrain(ANT *a)
+{
+
+    if (a->touching_the_hive && !a->is_stomach_empty)
+        a->BrainState = ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH;
+
+    if (a->is_mouth_touching_food && !a->is_full && a->BrainState != ABS_FEED)
+    {
+        a->BrainState = ABS_FEED;
+        a->food_no_touch_count = 0;
+    }
+
+    bool should_move = false;
+    bool should_drop_faramones = false;
+
+    switch (a->BrainState)
+    {
+
+    case ABS_LOOK_BEGIN_FOOD_ANTHILL_LOOKAROUND:
+    {
+
+        fprintf(stdout, "ABS_BEGIN_WANDER: StomachFullness: %.1f\n", a->StomachFullness);
+        // if we are less then 50% full, we go look for food
+        // if we are gtr then 50%, we go look for the hive
+
+        a->spin_search_turn_left = (bool)GetRandomValue(0, 1);
+        a->spin_search_start_pos_z = a->Position.z;
+        if (a->StomachFullness > .8f)
+        {
+            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPINSEARCH;
+        }
+        else
+        {
+            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH;
+        }
+    }
+    break;
+
+    case ABS_TOUCHING_HIVE_WITH_FOOD_IN_STOMACH:
+    {
+        dev_hill.FoodStore += .01f;
+        a->StomachFullness -= .01f;
+        if (0 >= a->StomachFullness)
+        {
+            a->Position.z += 180;
+            a->BrainState = ABS_LOOK_BEGIN_FOOD_ANTHILL_LOOKAROUND;
+        }
+    }
+    break;
+
+    case ABS_FEED:
+    {
+
+        if (a->food_no_touch_count > 100)
+        {
+            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH;
+            a->Position.w = ANT_WANDER_SPEED;
+        }
+
+        if (!a->is_mouth_touching_food)
+        {
+            should_move = true;
+            a->Position.w = .05;
+            a->food_no_touch_count++;
+        }
+        else
+        {
+            food_global.feed_ant(a);
+            a->food_no_touch_count = 0;
+            if (a->is_full)
+            {
+                a->BrainState = ABS_LOOK_BEGIN_FOOD_ANTHILL_LOOKAROUND;
+                a->Position.z += 180;
+                a->Position.w = ANT_WANDER_SPEED;
+            }
+        }
+    }
+    break;
+
+    case ABS_LOOK_FOR_FOOD_SPINSEARCH:
+    {
+        if (a->vi_eye_target_center.item == VIS_FOOD)
+        {
+            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND;
+        }
+        else
+        {
+            a->Position.z += a->spin_search_turn_left ? -SPIN_SEARCH_SPIN_SPEED : SPIN_SEARCH_SPIN_SPEED;
+            if (fabs(a->Position.z - a->spin_search_start_pos_z) >= 360.0)
+            {
+                a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH_NOTFOUND;
+            }
+        }
+    }
+    break;
+
+    case ABS_LOOK_FOR_ANTHILL_SPINSEARCH:
+    {
+        if (a->vi_eye_target_center.item == VIS_ANTHILL)
+        {
+            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND;
+        }
+        else
+        {
+            a->Position.z += a->spin_search_turn_left ? -SPIN_SEARCH_SPIN_SPEED : SPIN_SEARCH_SPIN_SPEED;
+            if (fabs(a->Position.z - a->spin_search_start_pos_z) >= 360.0)
+            {
+                a->BrainState = ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND;
+            }
+        }
+    }
+    break;
+
+    case ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_FOUND:
+    {
+
+        if (a->vi_eye_target_center.item != VIS_ANTHILL)
+        {
+            a->BrainState = ABS_LOOK_FOR_ANTHILL_SPINSEARCH;
+            break;
+        }
+
+        should_move = true;
+    }
+    break;
+
+    case ABS_LOOK_FOR_FOOD_SPINSEARCH_FOUND:
+    {
+
+        if (a->vi_eye_target_center.item != VIS_FOOD)
+        {
+            a->BrainState = ABS_LOOK_FOR_FOOD_SPINSEARCH;
+            break;
+        }
+
+        should_move = true;
+    }
+    break;
+
+    case ABS_LOOK_FOR_FOOD_SPINSEARCH_NOTFOUND:
+    {
+        a->BrainState = ABS_BEGIN_WANDER_FOR_FOOD;
+    }
+    break;
+
+    case ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND:
+    {
+        a->BrainState = ABS_BEGIN_WANDER_FOR_FOOD;
+    }
+    break;
+
+    case ABS_BEGIN_WANDER_FOR_FOOD:
+    {
+        should_move = true;
+    }
+    break;
+
+    default:
+        break;
+    }
+
+    if (should_move)
+    {
+        a->Position.x += a->Position.w * cosf(DEG_TO_RAD(a->Position.z));
+        a->Position.y += a->Position.w * sinf(DEG_TO_RAD(a->Position.z));
+    }
+
+    if (should_drop_faramones)
+    {
+        if (TimerDone(a->FaramoneDropTimer))
+        {
+            StartTimer(&a->FaramoneDropTimer, 1);
+            faramone_global.ant_place_faramone(*a, a->center_bottom);
+        }
+    }
+}
