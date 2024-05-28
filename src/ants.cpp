@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <assert.h>
+#include "raygui.h"
 
 // https://stackoverflow.com/a/48693317
 #define DEG_TO_RAD(angleInDegrees) \
@@ -311,6 +312,15 @@ void global_init()
 
     for (size_t i = 0; i < 100; i++)
         food_global.add((Vector2){GetRandomValue(1000, 1500), GetRandomValue(1000, 1500)}, GetRandomValue(1, 3));
+
+    for (size_t i = 0; i < 100; i++)
+        food_global.add((Vector2){GetRandomValue(-500, -1000), GetRandomValue(500, 1500)}, GetRandomValue(1, 3));
+
+    for (size_t i = 0; i < 100; i++)
+        food_global.add((Vector2){GetRandomValue(-1000, -1500), GetRandomValue(1000, -1500)}, GetRandomValue(1, 3));
+
+    for (size_t i = 0; i < 100; i++)
+        food_global.add((Vector2){GetRandomValue(-500, -1000), GetRandomValue(500, -1500)}, GetRandomValue(1, 3));
 }
 
 void global_render_game()
@@ -608,9 +618,10 @@ void ANT::Draw()
             BLACK);
     }
 }
-#include "raygui.h"
+
 void faramone_global_render_hud()
 {
+
     GuiSlider({10, 500, 128, 16}, "",
               TextFormat("Stomch fullness to faramone output %.1f",
                          faramone_global.StomachFullesFaramoneMultiplyer),
@@ -618,7 +629,11 @@ void faramone_global_render_hud()
 
     GuiCheckBox({10, 516, 128, 16}, "Show Vision", &show_ant_vision);
 }
-void faramone_global_update() { faramone_global.update(); }
+void faramone_global_update()
+{
+    // main_main.update();
+    faramone_global.update();
+}
 void faramone_global_render_game() { faramone_global.render(); }
 void faramone_global_init() { faramone_global.init(); }
 
@@ -749,6 +764,7 @@ void AntBrain(ANT *a)
         else
         {
             a->Position.z += a->spin_search_turn_left ? -SPIN_SEARCH_SPIN_SPEED : SPIN_SEARCH_SPIN_SPEED;
+
             if (fabs(a->Position.z - a->spin_search_start_pos_z) >= 360.0)
             {
                 a->BrainState = ABS_LOOK_FOR_ANTHILL_SPIN_SEARCH_NOTFOUND;
@@ -780,6 +796,7 @@ void AntBrain(ANT *a)
         }
 
         should_move = true;
+        should_drop_faramones = true;
     }
     break;
 
@@ -797,6 +814,16 @@ void AntBrain(ANT *a)
 
     case ABS_BEGIN_SNIFF_HOME:
     {
+        if (a->is_left_antina_touching_faramone)
+        {
+            a->Position.z -= 2;
+        }
+
+        if (a->is_right_antina_touching_faramone)
+        {
+            a->Position.z += 2;
+        }
+        should_move = true;
     }
     break;
 
@@ -810,7 +837,17 @@ void AntBrain(ANT *a)
 
         should_move = true;
         should_drop_faramones = true;
-        faramones_power = 2.0f;
+        faramones_power = 3.0f;
+
+        if (a->is_left_antina_touching_faramone)
+        {
+            a->Position.z -= 2;
+        }
+
+        if (a->is_right_antina_touching_faramone)
+        {
+            a->Position.z += 2;
+        }
 
         if (a->wander_stumble-- <= 0)
         {

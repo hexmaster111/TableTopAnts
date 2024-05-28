@@ -9,6 +9,83 @@ extern "C"
 
 #include "ants.hpp"
 
+typedef void (*MENU_ITEM_CALLBACK)(int);
+
+struct MENU_BAR
+{
+    bool layout_valid;
+    Rectangle layout[12];
+    const char *items[12];
+    MENU_ITEM_CALLBACK cb;
+
+    void render()
+    {
+
+        if (!layout_valid)
+        {
+            int width = GetScreenWidth();
+            int twelth = width / 12;
+
+            for (size_t i = 0; i < 12; i++)
+            {
+                layout[i] = (Rectangle){
+                    .x = i * twelth,
+                    .y = 0,
+                    .width = twelth,
+                    .height = 32,
+                };
+            }
+        }
+
+        for (size_t i = 0; i < 12; i++)
+        {
+            int c;
+            if (c = GuiButton(layout[i], items[i]))
+            {
+                if (cb != NULL)
+                    (cb)(i);
+            }
+        }
+    }
+};
+
+void main_main_cb(int n);
+MENU_BAR main_main = {
+    .items = {
+        "Faramone Brush",
+        "Food Brush"},
+    .cb = &main_main_cb,
+};
+
+enum ACTIVE_TOOL
+{
+    AT_FaramoneBrush,
+    AT_FoodBrush
+} active_tool;
+
+const char *ToString(ACTIVE_TOOL at)
+{
+    if (at == AT_FaramoneBrush)
+        return "Faramone Brush";
+    if (at == AT_FoodBrush)
+        return "Food Brush";
+
+    return "To string at!";
+}
+
+void main_main_cb(int n)
+{
+    if (n == 0)
+    {
+        active_tool = AT_FaramoneBrush;
+    }
+
+    if (n == 1)
+    {
+        active_tool = AT_FoodBrush;
+    }
+}
+
 Vector2 GetMovementMatrixVector(bool u, bool d, bool l, bool r)
 {
     Vector2 res = {0};
@@ -25,11 +102,11 @@ Vector2 GetMovementMatrixVector(bool u, bool d, bool l, bool r)
     return res;
 }
 
-const int screen_width = 800, screen_height = 600;
-
 int main(int argc, char **argv)
 {
     const int ant_count = 1;
+    const int screen_width = 1000,
+              screen_height = 800;
 
     bool pause = false;
 
@@ -60,6 +137,8 @@ int main(int argc, char **argv)
 
     faramone_global_init();
     global_init();
+
+    Vector2 mouseWorldPos = {0};
 
     while (!WindowShouldClose())
     {
@@ -129,9 +208,13 @@ int main(int argc, char **argv)
             a->Draw();
         }
 
+        DrawCircleV(mouseWorldPos, 5, BLACK);
+
         EndMode2D();
         // hud
         faramone_global_render_hud();
+        main_main.render();
+        DrawText(TextFormat("Active Tool: %s", ToString(active_tool)), 100, 30, 16, BLACK);
 
         GuiCheckBox((Rectangle){10, 60, 100, 16}, "", &ants[0].is_left_antina_touching_faramone);
         GuiCheckBox((Rectangle){110, 60, 100, 16}, "LFaramone | RFaramone", &ants[0].is_right_antina_touching_faramone);
