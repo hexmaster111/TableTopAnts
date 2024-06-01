@@ -23,16 +23,16 @@ struct MENU_BAR
 
         if (!layout_valid)
         {
-            int width = GetScreenWidth();
-            int twelth = width / 12;
+            float width = GetScreenWidth();
+            float twelth = width / 12;
 
             for (size_t i = 0; i < 12; i++)
             {
                 layout[i] = (Rectangle){
                     .x = i * twelth,
-                    .y = 0,
-                    .width = twelth,
-                    .height = 32,
+                    .y = 0.0f,
+                    .width = (float)twelth,
+                    .height = 32.0f,
                 };
             }
         }

@@ -311,16 +311,16 @@ void global_init()
     // food_global.add((Vector2){10, 10}, 3);
 
     for (size_t i = 0; i < 100; i++)
-        food_global.add((Vector2){GetRandomValue(1000, 1500), GetRandomValue(1000, 1500)}, GetRandomValue(1, 3));
+        food_global.add((Vector2){(float)GetRandomValue(1000, 1500), (float)GetRandomValue(1000, 1500)},(float) GetRandomValue(1, 3));
 
     for (size_t i = 0; i < 100; i++)
-        food_global.add((Vector2){GetRandomValue(-500, -1000), GetRandomValue(500, 1500)}, GetRandomValue(1, 3));
+        food_global.add((Vector2){(float)GetRandomValue(-500, -1000), (float)GetRandomValue(500, 1500)},(float) GetRandomValue(1, 3));
 
     for (size_t i = 0; i < 100; i++)
-        food_global.add((Vector2){GetRandomValue(-1000, -1500), GetRandomValue(1000, -1500)}, GetRandomValue(1, 3));
+        food_global.add((Vector2){(float)GetRandomValue(-1000, -1500), (float)GetRandomValue(1000, -1500)}, (float)GetRandomValue(1, 3));
 
     for (size_t i = 0; i < 100; i++)
-        food_global.add((Vector2){GetRandomValue(-500, -1000), GetRandomValue(500, -1500)}, GetRandomValue(1, 3));
+        food_global.add((Vector2){(float)GetRandomValue(-500, -1000),(float) GetRandomValue(500, -1500)},(float) GetRandomValue(1, 3));
 }
 
 void global_render_game()
